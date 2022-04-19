@@ -6,6 +6,7 @@ import edu.cs340.lexer.Token;
 import edu.cs340.parser.ASTNode;
 import edu.cs340.parser.Parser;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -22,14 +23,10 @@ public class Main {
 
     private static final Pattern empty = Pattern.compile("^\\s*");
     private static final Pattern introCommand = Pattern.compile("^\\s*intro\\s*", Pattern.CASE_INSENSITIVE);
-    private static final Pattern listFuncCommand = Pattern.compile("^\\s*list funcs\\s*.*\\s*", Pattern.CASE_INSENSITIVE);
-    private static final Pattern inspectFuncCommand = Pattern.compile("^\\s*inspect\\s*.*\\s*", Pattern.CASE_INSENSITIVE);
-    private static final Pattern dropFuncCommand = Pattern.compile("^\\s*drop func\\s*.*\\s*", Pattern.CASE_INSENSITIVE);
-    private static final Pattern clearFuncCommand = Pattern.compile("^\\s*clear funcs\\s*", Pattern.CASE_INSENSITIVE);
 
-    private static final Pattern listVarCommand = Pattern.compile("^\\s*list vals\\s*.*\\s*", Pattern.CASE_INSENSITIVE);
-    private static final Pattern dropVarCommand = Pattern.compile("^\\s*drop val\\s*.*\\s*", Pattern.CASE_INSENSITIVE);
-    private static final Pattern clearVarCommand = Pattern.compile("^\\s*clear vals\\s*", Pattern.CASE_INSENSITIVE);
+    private static final Pattern listVarCommand = Pattern.compile("^\\s*list vars\\s*.*\\s*", Pattern.CASE_INSENSITIVE);
+    private static final Pattern dropVarCommand = Pattern.compile("^\\s*drop var\\s*.*\\s*", Pattern.CASE_INSENSITIVE);
+    private static final Pattern clearVarCommand = Pattern.compile("^\\s*clear vars\\s*", Pattern.CASE_INSENSITIVE);
 
     public static void main(String[] args) {
         intro();
@@ -38,19 +35,19 @@ public class Main {
             System.out.print("=> ");
             line = in.nextLine();
 
-            if (exit.asPredicate().test(line)) break;
-            else if (lexCommand.asPredicate().test(line)) lex(line.replaceFirst("\\s*lex", ""));
-            else if (parseCommand.asPredicate().test(line)) parse(line.replaceFirst("\\s*parse", ""));
-            else if(helpCommand.asPredicate().test(line)) help(line.replaceFirst("\\s*help", ""));
-            else if (introCommand.asPredicate().test(line)) intro();
-            else if (listFuncCommand.asPredicate().test(line)) listFuncs(line.replaceFirst("\\s*list funcs\\s*", ""));
-            else if (inspectFuncCommand.asPredicate().test(line)) inspectFunc(line.replaceFirst("\\s*inspect\\s*", ""));
-            else if (dropFuncCommand.asPredicate().test(line)) dropFunc(line.replaceFirst("\\s*drop func\\s*", ""));
-            else if (clearFuncCommand.asPredicate().test(line)) clearFuncs();
-            else if (listVarCommand.asPredicate().test(line)) listVars(line.replaceFirst("\\s*list vars\\s*", ""));
-            else if (dropVarCommand.asPredicate().test(line)) dropVar(line.replaceFirst("\\s*drop var\\s*", ""));
-            else if (clearVarCommand.asPredicate().test(line)) clearVars();
-            else interpret(line);
+            //try {
+                if (exit.asPredicate().test(line)) break;
+                else if (lexCommand.asPredicate().test(line)) lex(line.replaceFirst("\\s*lex", ""));
+                else if (parseCommand.asPredicate().test(line)) parse(line.replaceFirst("\\s*parse", ""));
+                else if (helpCommand.asPredicate().test(line)) help(line.replaceFirst("\\s*help", ""));
+                else if (introCommand.asPredicate().test(line)) intro();
+                else if (listVarCommand.asPredicate().test(line)) listVars(line.replaceFirst("\\s*list vars\\s*", ""));
+                else if (dropVarCommand.asPredicate().test(line)) dropVar(line.replaceFirst("\\s*drop var\\s*", ""));
+                else if (clearVarCommand.asPredicate().test(line)) clearVars();
+                else interpret(line);
+            //} catch (Exception e) {
+            //    System.out.println("Something went wrong: " + e.getMessage());
+            //}
         }
     }
 
@@ -74,6 +71,17 @@ public class Main {
         System.out.println(sb);
     }
 
+    public static void inOrderPrint(ASTNode ast) {
+        if (Objects.isNull(ast.children())) {
+            System.out.print(ast.val() + " ");
+            return;
+        }
+
+        inOrderPrint(ast.children().get(0));
+        System.out.print(ast.val() + " ");
+        if (ast.children().size() >= 2) inOrderPrint(ast.children().get(1));
+    }
+
     public static void prettyPrint(ASTNode ast, int d, StringBuilder accumulator) {
         StringBuilder tabs = new StringBuilder();
         for (int i = 0; i < d; i++) tabs.append('\t');
@@ -92,12 +100,11 @@ public class Main {
         if (empty.asPredicate().test(what)) {
             String line1 = "Useful commands: \n";
             String line2 = "\t\'intro\' -- to have the intro printed again\n";
-            String line3 = "\t\'list funcs\' -- to have all the known functions printed\n";
-            String line4 = "\t\'inspect {func_name}\' -- to have information about that function printed\n";
-            String line5 = "\t\'drop {func_name}\' -- to have that function unregistered\n";
-            String line6 = "\t\'clear funcs\' -- to have all functions unregistered\n";
-            String line7 = "\t\'help {command_name}\' -- to for a longer explanation of how a command works";
-            System.out.printf("%s%s%s%s%s%s%s%n", line1, line2, line3, line4, line5, line6, line7);
+            String line3 = "\t\'list vars\' -- to have all the known variables printed\n";
+            String line4 = "\t\'drop {var_name}\' -- to have that function unregistered\n";
+            String line5 = "\t\'clear vars\' -- to have all functions unregistered\n";
+            String line6 = "\t\'help {command_name}\' -- to for a longer explanation of how a command works";
+            System.out.printf("%s%s%s%s%s%s%s%n", line1, line2, line3, line4, line5, line6);
         }
     }
 
@@ -106,12 +113,12 @@ public class Main {
         lex.init(line);
 
         try {
-            List<Token> toks = new ArrayList<>();
+            List<Token> tokens = new ArrayList<>();
             while (lex.hasNextToken()) {
-                toks.add(lex.nextToken());
+                tokens.add(lex.nextToken());
             }
             System.out.println("Tokens: ");
-            for (Token t : toks) {
+            for (Token t : tokens) {
                 System.out.println(t);
             }
         } catch (IllegalArgumentException ex) {
@@ -133,39 +140,29 @@ public class Main {
     public static void interpret(String line) {
         try {
             ASTNode res = Interpreter.eval(line);
-            if (Objects.nonNull(res)) System.out.println(res.val());
+            if (Objects.nonNull(res)) {
+                ASTNode oldRes = null;
+                while (!res.equals(oldRes)) {
+                    oldRes = res;
+                    res = Interpreter.eval(res);
+                }
+                System.out.println(res.consolePrint());
+            }
         } catch (IllegalArgumentException | IllegalStateException ex) {
             System.out.println(ex.getMessage());
         }
-    }
-
-    public static void listFuncs(String args) {
-        Interpreter.listFuncs();
-    }
-
-    public static void inspectFunc(String func) {
-        String[] val = func.split("::");
-        Interpreter.inspectFunc(val[0], Integer.parseInt(val[1]));
-    }
-
-    public static void dropFunc(String func) {
-        String[] val = func.split("::");
-        Interpreter.dropFunc(val[0], Integer.parseInt(val[1]));
-    }
-
-    public static void clearFuncs() {
-        Interpreter.clearFuncs();
     }
 
     public static void listVars(String args) {
         Interpreter.listVars();
     }
 
-    public static void dropVar(String val) {
-        Interpreter.dropVar(val);
+    public static void dropVar(String var) {
+        Interpreter.dropVar(var);
     }
 
     public static void clearVars() {
         Interpreter.clearVars();
     }
+
 }
