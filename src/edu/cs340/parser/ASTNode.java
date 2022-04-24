@@ -6,7 +6,7 @@ import java.util.Objects;
 public class ASTNode {
 
     private Type type;
-    private boolean isGlobal;
+    private boolean markFinal;
     private Object val;
     private List<ASTNode> children;
 
@@ -18,13 +18,6 @@ public class ASTNode {
         this(t);
         this.val = val;
     }
-
-    public ASTNode(Type t, Object val, boolean isGlobal) {
-        this(t);
-        this.val = val;
-        this.isGlobal = isGlobal;
-    }
-
 
     public ASTNode(Type t, List<ASTNode> children) {
         this(t);
@@ -48,17 +41,21 @@ public class ASTNode {
         return this.children;
     }
 
-    public void markGlobal() {
-        isGlobal = true;
+    public void val(Object val) {
+        this.val = val;
     }
 
-    public boolean isGlobal() {
-        return isGlobal;
+    public void markFinal() {
+        markFinal = true;
+    }
+
+    public boolean isFinal() {
+        return markFinal;
     }
 
     @Override
     public String toString() {
-        return String.format("ASTNode(Type=%s, Value=%s)", type, val);
+        return String.format("ASTNode(Type=%s, Value=%s, isFinal=%s)", type, val, isFinal());
     }
 
     public String consolePrint() {
@@ -91,6 +88,7 @@ public class ASTNode {
                 return children.get(0).consolePrint() + "!";
             }
             case ID:
+                return String.valueOf(val).split("\\*")[0];
             case NUM:
                 return String.valueOf(val);
             case ASSIGN:

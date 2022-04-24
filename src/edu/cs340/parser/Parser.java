@@ -1,18 +1,17 @@
 package edu.cs340.parser;
 
+import edu.cs340.Main;
 import edu.cs340.lexer.Lexer;
 import edu.cs340.lexer.Token;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 public class Parser {
 
     private final Lexer lex;
     private Token lookahead;
-    private boolean isGlobal = true;
 
     public static ASTNode parse(String src) {
         Parser p = new Parser(src);
@@ -48,11 +47,7 @@ public class Parser {
         if (lookahead.type() != Token.Type.ASSIGN) fail(lookahead);
         advance();
 
-        ASTNode rhs;
-        if (lookahead.type() == Token.Type.FUNC) {
-            rhs = functionDefinition();
-        } else rhs = additiveExpression();
-
+        ASTNode rhs = functionDefinition();
         return new ASTNode(ASTNode.Type.ASSIGN, name, ls(rhs));
     }
 
@@ -66,15 +61,42 @@ public class Parser {
         advance();
         if (lookahead.type() != Token.Type.OPENING_PAREN) fail(lookahead);
         advance();
-        isGlobal = false;
         ASTNode params = parameterList();
         if (lookahead.type() != Token.Type.CLOSING_PAREN) fail(lookahead);
         advance();
         if (lookahead.type() != Token.Type.FAT_ARROW) fail(lookahead);
         advance();
         ASTNode fnDef = functionDefinition();
-        isGlobal = true;
+
+        Hashtable<String, String> mappings = new Hashtable<>();
+        for (ASTNode n: params.children()) {
+            if (n.type() != ASTNode.Type.ID) continue;
+            String id = (String) n.val();
+            String newId = id + "*" + UUID.randomUUID();
+            mappings.put(id, newId);
+            n.val(newId);
+            n.markFinal();
+        }
+
+        renameLocals(fnDef, mappings);
+
         return new ASTNode(ASTNode.Type.FUNC_DEF, ls(params, fnDef));
+    }
+
+    private void renameLocals(ASTNode node, Hashtable<String, String> mappings) {
+        if (Objects.isNull(node)) return;
+        if (Objects.nonNull(node.children())) {
+            for (ASTNode c: node.children()) renameLocals(c, mappings);
+        }
+
+        if (node.type() != ASTNode.Type.ID) return;
+        if (node.isFinal()) return;
+
+        String curName = (String)node.val();
+        if (mappings.containsKey(curName)) {
+            node.val(mappings.get(curName));
+            node.markFinal();
+        }
     }
 
     /**
@@ -185,6 +207,7 @@ public class Parser {
      * primaryExpression ::=
      * ( functionDefinition ) |
      * - primaryExpression |
+     * ID |
      * NUMBER
      */
     private ASTNode primaryExpression() {
@@ -204,7 +227,8 @@ public class Parser {
         if (lookahead.type() == Token.Type.ID) {
             Token la = lookahead;
             advance();
-            return new ASTNode(ASTNode.Type.ID, la.value(), isGlobal);
+
+            return new ASTNode(ASTNode.Type.ID, la.value());
         }
 
         if (lookahead.type() != Token.Type.NUMERIC) fail(lookahead);
@@ -217,7 +241,6 @@ public class Parser {
      * parameterList ::=
      * neParameterList |
      * { empty }
-     * <p>
      * neParameterList ::=
      * functionDefinition, parameterList |
      * functionDefinition
@@ -225,8 +248,7 @@ public class Parser {
     private ASTNode parameterList() {
         List<ASTNode> params = new LinkedList<>();
         while (lookahead.type() != Token.Type.CLOSING_PAREN) {
-            ASTNode p = functionDefinition();
-            params.add(p);
+            params.add(functionDefinition());
             if (lookahead.type() == Token.Type.CLOSING_PAREN) break;
             if (lookahead.type() != Token.Type.COMMA) fail(lookahead);
             advance();
@@ -243,7 +265,7 @@ public class Parser {
         throw new IllegalArgumentException("Illegal expression found: " + token.value() + " " + lookahead.value());
     }
 
-    static <T> List<T> ls(T... elems) {
+    public static <T> List<T> ls(T... elems) {
         List<T> linkedList = new LinkedList<>();
         for(T t: elems) linkedList.add(t);
         return linkedList;

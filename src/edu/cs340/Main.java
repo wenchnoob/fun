@@ -6,11 +6,7 @@ import edu.cs340.lexer.Token;
 import edu.cs340.parser.ASTNode;
 import edu.cs340.parser.Parser;
 
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Scanner;
+import java.util.*;
 import java.util.regex.Pattern;
 
 public class Main {

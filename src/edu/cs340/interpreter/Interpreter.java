@@ -27,9 +27,9 @@ public class Interpreter {
             case ASSIGN:
                 return register(node);
             case ID: {
-                if (!node.isGlobal()) return node;
                 String name = (String) node.val();
-                return vars.getOrDefault(name, node);
+                if (vars.containsKey(name)) return vars.get(name);
+                return node;
             }
             case NEGATION:
                 return negate(node);
@@ -37,12 +37,6 @@ public class Interpreter {
                 return fact(node);
             case APPLICATION:
                 return evalApplication(node);
-            case PARAM_LIST: {
-                for (int i = 0; i < node.children().size(); i++) {
-                    node.children().set(i, eval(node.children().get(i)));
-                }
-                return node;
-            }
             case MULT:
             case MOD:
             case FLOOR_DIV:
@@ -56,47 +50,46 @@ public class Interpreter {
         }
     }
 
-    private static ASTNode evalApplication(ASTNode node) {
+    public static ASTNode evalApplication(ASTNode node) {
         if (node.type() != ASTNode.Type.APPLICATION) return eval(node);
-        return evalApplication(node, new Hashtable<>());
-    }
 
-    private static ASTNode evalApplication(ASTNode node, Hashtable<String, ASTNode> actParams) {
-        if (node.type() != ASTNode.Type.APPLICATION) return eval(node);
-        ASTNode lhs = eval(node.children().get(0));
-        ASTNode rhs = eval(node.children().get(1));
-        node.children().set(0, lhs);
-        node.children().set(1, rhs);
+        ASTNode lhs = node.children().get(0);
+
+        ASTNode rhs = node.children().get(1);
+        if (rhs.type() != ASTNode.Type.PARAM_LIST) {
+            rhs = eval(rhs);
+            node.children().set(1, rhs);
+        }
+        if (rhs.type() != ASTNode.Type.PARAM_LIST) return node;
+
+        if (lhs.type() != ASTNode.Type.FUNC_DEF) {
+            lhs = eval(lhs);
+            node.children().set(0, lhs);
+        }
         if (lhs.type() != ASTNode.Type.FUNC_DEF) return node;
-        node = getVars(lhs, rhs, actParams);
-        return evalApplication(node);
+
+        node = getVars(lhs, rhs);
+
+        if (lhs.type() != ASTNode.Type.FUNC_DEF) return node;
+
+        return eval(node);
     }
 
-    private static ASTNode getVars(ASTNode lhs, ASTNode rhs, Hashtable<String, ASTNode> actParams) {
+    private static ASTNode getVars(ASTNode lhs, ASTNode rhs) {
         List<ASTNode> formalParams = lhs.children().get(0).children();
-
+        Hashtable<String, ASTNode> actParams = new Hashtable<>();
         for (int i = 0; i < formalParams.size() && i < rhs.children().size(); i++) {
             if (formalParams.get(i).type() == ASTNode.Type.ID) {
-                actParams.put((String) formalParams.get(i).val(), eval(rhs.children().get(i)));
+                actParams.put((String) formalParams.get(i).val(), rhs.children().get(i));
             }
         }
 
         ASTNode body = lhs.children().get(1);
-        return eval(copyWithVars(body, actParams));
+        return copyWithVars(body, actParams);
     }
 
     private static ASTNode copyWithVars(ASTNode src, Hashtable<String, ASTNode> vars) {
         List<ASTNode> children = new LinkedList<>();
-
-        if (src.type() == ASTNode.Type.FUNC_DEF) {
-            List<ASTNode> formalParams = src.children().get(0).children();
-
-            for (int i = 0; i < formalParams.size(); i++) {
-                if (formalParams.get(i).type() == ASTNode.Type.ID) {
-                    vars.remove((String) formalParams.get(i).val());
-                }
-            }
-        }
 
         if (Objects.nonNull(src.children())) {
             for (ASTNode child : src.children()) children.add(copyWithVars(child, vars));
@@ -104,17 +97,10 @@ public class Interpreter {
 
         if (src.type() == ASTNode.Type.ID) {
             String id = (String) src.val();
-
-            if (src.isGlobal()) return Interpreter.vars.getOrDefault(id, src);
-
             if (vars.containsKey(id)) {
-                return vars.get(id);
-            } else {
-                if (Interpreter.vars.containsKey(id)) {
-                    return Interpreter.vars.get(id);
-                }
+                ASTNode var = vars.get(id);
+                return var;
             }
-            return src;
         }
 
         return new ASTNode(src.type(), src.val(), children);
@@ -136,11 +122,10 @@ public class Interpreter {
             if (rhs.val().equals(BigDecimal.ZERO)) return lhs;
 
 
-        if (Objects.isNull(lhs) || lhs.type() != ASTNode.Type.NUM || Objects.isNull(rhs) || rhs.type() != ASTNode.Type.NUM) {
-            node.children().set(0, lhs);
-            node.children().set(1, rhs);
-            return node;
-        }
+        node.children().set(0, lhs);
+        node.children().set(1, rhs);
+
+        if (Objects.isNull(lhs) || lhs.type() != ASTNode.Type.NUM || Objects.isNull(rhs) || rhs.type() != ASTNode.Type.NUM) return node;
 
         BigDecimal l = (BigDecimal) lhs.val();
         BigDecimal r = (BigDecimal) rhs.val();
@@ -223,7 +208,7 @@ public class Interpreter {
     public static BigDecimal pow(BigDecimal base, BigDecimal exp) {
         BigDecimal ans = BigDecimal.ONE;
 
-        BigDecimal whole = exp.divideToIntegralValue(BigDecimal.ONE); //decimalPoints(exp, 0);
+        BigDecimal whole = exp.divideToIntegralValue(BigDecimal.ONE);
 
         while (whole.compareTo(BigDecimal.ZERO) > 0) {
             ans = ans.multiply(base);
@@ -298,45 +283,37 @@ public class Interpreter {
 
     public static void loadDefaultFunctions() {
         eval("let pow = f(x, y) => x ^ y");
-
-        eval("let root = f(x, y) => y ^ (1/x)");
-        eval("let sqrt = f(x) => root(2, x)");
-        eval("let cbrt = f(x) => root(3, x)");
-
-        eval("let fact = f(x) => x!");
-
         eval("let floor_div = f(x) => f(y) => (x - x % y)/y");
 
-        eval("let true = 1");
-        eval("let false = 0");
-        eval("let isFalse = f(x) => (1 - x ^ 2/(x ^ 2 + 1)) // 1");
+        eval("let root = f(x) => f(y) => y ^ (1/x)");
+        eval("let sqrt = f(x) => root(2)(x)");
+        eval("let cbrt = f(x) => root(3)(x)");
+
+        eval("let isFalse = f(x) => (1- x ^ 2/(x ^ 2 + 1)) // 1");
         eval("let isTrue = f(x) => (isFalse(x) + 1) % 2");
 
         eval("let n_divides_m = f(n) => f(m) => isFalse(m % n)");
 
-        eval("let eq = f(x, y) => isFalse(x - y)");
-        eval("let neq = f(x, y) => isFalse(eq(x, y))");
-        eval("let gt = f(x, y) => isTrue(x-y) * eq(root(2, (x-y) ^ 2), x-y)");
-        eval("let lt = f(x, y) => isTrue(x-y) * isFalse(eq(root(2, (x-y) ^ 2), x-y))");
+        eval("let eq = f(x) => f(y) => isFalse(x - y)");
+        eval("let neq = f(x) => f(y) => isFalse(eq(x)(y))");
+        eval("let gt = f(x) => f(y) => isTrue(x-y) * eq (sqrt((x-y) ^ 2)) (x-y)");
+        eval("let lt = f(x) => f(y) => isTrue(x-y) * isFalse(eq(root(2)((x-y) ^ 2))(x-y))");
         eval("let gteq = f(x, y) => isFalse(lt(x, y))");
         eval("let lteq = f(x, y) => isFalse(gt(x, y))");
 
 
         // Combinators
+        eval("let isNegative = f(x) => lt(x, 0)");
 
-        // Custom
-        eval("let add = f(x) => f(y) => x + y");
-
-        // Basic
         eval("let I = f(x) => x");
         eval("let K = f(x) => f(y) => x");
+        eval("let S = f(x) => f(y) => f(z) => (x(z))(y(z))");
         eval("let M = f(x) => x(x)");
         eval("let T = f(x) => f(y) => y(x)");
-        eval("let S = f(x) => f(y) => f(z) => (x(z))(y(z))");
         eval("let Z = f(x) => f(y) => f(z) => x(y(z))");
 
-        eval("let TRUE = K");
-        eval("let FALSE = S(K)");
+        eval("let TRUE = f(x) => f(y) => x");
+        eval("let FALSE = f(x) => f(y) => y");
         eval("let NOT = f(x) => (x(FALSE))(TRUE)");
         eval("let OR = f(x) => f(y) => x(x)(y)");
         eval("let AND = f(x) => f(y) => x(y)(S(K))");
@@ -344,6 +321,22 @@ public class Interpreter {
         eval("let ENCODE = f(x) => isFalse(x) * FALSE + isTrue(x) * TRUE");
         eval("let IF = f(x) => f(y) => f(z) => ENCODE(x)(y)(z)");
         eval("let max = f(x) => f(y) => IF(gt(x, y))(x)(y)");
+
+        // factorial
+        eval("let fact = f(x) => x!");
+        eval("let factorial = f(x) => IF (eq(x)(0)) (1) ( IF (lt(x)(0)) (tori(x + 1) * x) (tori(x-1) * x)  )");
+        // eval("let pos_tori = f(x) => ENCODE (eq(x)(0)) (1) (pos_tori(x-1) * x)");
+        // eval("let neg_tori = f(x) => ENCODE (eq(x)(0)) (1) (neg_tori(x+1) * x)");
+        // eval("let tori = f(x) => ENCODE( lt(x)(0) ) ( neg_tori(x) ) ( pos_tori(x) )");
+        eval("let mult = f(x) => f(y) => IF (lt(x)(0)) ( -mult(-x)(y) ) ( IF (x) (mult(x-1)(y) + y) (0) )");
+
+
+        // IF (eq(0)(0)) (1) ( IF(gt(x)(0)) (tori(x -1) * x) (tori(x + 1) * x) )
+
+        // utilities
+        eval("let infix = f(x) => f(y) => f(z) => (y(x))(z)");
+
+        //eval("let mult = f(x) => f(y) => ");
     }
 
 }
