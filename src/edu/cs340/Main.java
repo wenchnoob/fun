@@ -31,7 +31,7 @@ public class Main {
             System.out.print("=> ");
             line = in.nextLine();
 
-            //try {
+            try {
                 if (exit.asPredicate().test(line)) break;
                 else if (lexCommand.asPredicate().test(line)) lex(line.replaceFirst("\\s*lex", ""));
                 else if (parseCommand.asPredicate().test(line)) parse(line.replaceFirst("\\s*parse", ""));
@@ -41,9 +41,9 @@ public class Main {
                 else if (dropVarCommand.asPredicate().test(line)) dropVar(line.replaceFirst("\\s*drop var\\s*", ""));
                 else if (clearVarCommand.asPredicate().test(line)) clearVars();
                 else interpret(line);
-            //} catch (Exception e) {
-            //    System.out.println("Something went wrong: " + e.getMessage());
-            //}
+            } catch (Exception e) {
+                System.out.println("Something went wrong: " + e.getMessage());
+            }
         }
     }
 
@@ -115,7 +115,7 @@ public class Main {
             }
             System.out.println("Tokens: ");
             for (Token t : tokens) {
-                System.out.println(t);
+                System.out.println("\t" + t);
             }
         } catch (IllegalArgumentException ex) {
             System.out.println(ex.getMessage());
