@@ -1,6 +1,5 @@
 package edu.cs340.parser;
 
-import edu.cs340.Main;
 import edu.cs340.lexer.Lexer;
 import edu.cs340.lexer.Token;
 
@@ -28,8 +27,7 @@ public class Parser {
     }
 
     private ASTNode main() {
-        if (lookahead.type() == Token.Type.LET) return assignment();
-        else return functionDefinition();
+        return assignment();
     }
 
     /**
@@ -38,8 +36,7 @@ public class Parser {
      * functionDefinition
      */
     private ASTNode assignment() {
-        if (lookahead.type() != Token.Type.LET) fail(lookahead);
-        advance();
+        if (lookahead.type() != Token.Type.LET)  return functionDefinition();
         if (lookahead.type() != Token.Type.ID) fail(lookahead);
         String name = lookahead.value();
         advance();
@@ -232,6 +229,7 @@ public class Parser {
      * parameterList ::=
      * neParameterList |
      * { empty }
+     *
      * neParameterList ::=
      * functionDefinition, parameterList |
      * functionDefinition
