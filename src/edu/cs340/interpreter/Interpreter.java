@@ -283,17 +283,12 @@ public class Interpreter {
 
     public static void loadDefaultFunctions() {
         eval("let pow = f(x, y) => x ^ y");
-        eval("let floor_div = f(x) => f(y) => (x - x % y)/y");
 
         eval("let root = f(x) => f(y) => y ^ (1/x)");
         eval("let sqrt = f(x) => root(2)(x)");
         eval("let cbrt = f(x) => root(3)(x)");
 
-        eval("let isFalse = f(x) => (1- x ^ 2/(x ^ 2 + 1)) // 1");
-        eval("let isTrue = f(x) => (isFalse(x) + 1) % 2");
-
-        eval("let n_divides_m = f(n) => f(m) => isFalse(m % n)");
-
+        /* Comparison operators */
         eval("let eq = f(x) => f(y) => isFalse(x - y)");
         eval("let neq = f(x) => f(y) => isFalse(eq(x)(y))");
         eval("let gt = f(x) => f(y) => isTrue(x-y) * eq (sqrt((x-y) ^ 2)) (x-y)");
@@ -301,42 +296,57 @@ public class Interpreter {
         eval("let gteq = f(x, y) => isFalse(lt(x, y))");
         eval("let lteq = f(x, y) => isFalse(gt(x, y))");
 
+        eval("let isNegative = f(x) => lt(x)(0)");
+        eval("let isPositive = f(x) => gt(x)(0)");
 
-        // Combinators
-        eval("let isNegative = f(x) => lt(x, 0)");
-
+        /* Identity */
         eval("let I = f(x) => x");
+
+        /* Kestrel */
         eval("let K = f(x) => f(y) => x");
+
+        /* Fusion */
         eval("let S = f(x) => f(y) => f(z) => (x(z))(y(z))");
+
+        /* Mocking Bird */
         eval("let M = f(x) => x(x)");
+
+        /* Swap -- Unary Postfix */
         eval("let T = f(x) => f(y) => y(x)");
+
+        /* Function Composition */
         eval("let Z = f(x) => f(y) => f(z) => x(y(z))");
 
+        /* Infix */
+        eval("let infix = f(x) => f(y) => f(z) => (y(x))(z)");
+
+        /* Boolean */
+        eval("let isFalse = f(x) => (1- x ^ 2/(x ^ 2 + 1)) // 1");
+        eval("let isTrue = f(x) => (isFalse(x) + 1) % 2");
         eval("let TRUE = f(x) => f(y) => x");
         eval("let FALSE = f(x) => f(y) => y");
+        eval("let ENCODE = f(x) => isFalse(x) * FALSE + isTrue(x) * TRUE");
+
+        /* Boolean Operators */
         eval("let NOT = f(x) => (x(FALSE))(TRUE)");
         eval("let OR = f(x) => f(y) => x(x)(y)");
-        eval("let AND = f(x) => f(y) => x(y)(S(K))");
+        eval("let AND = f(x) => f(y) => x(y)(FALSE)");
 
-        eval("let ENCODE = f(x) => isFalse(x) * FALSE + isTrue(x) * TRUE");
+        /* Conditionals */
         eval("let IF = f(x) => f(y) => f(z) => ENCODE(x)(y)(z)");
-        eval("let max = f(x) => f(y) => IF(gt(x, y))(x)(y)");
 
-        // factorial
-        eval("let fact = f(x) => x!");
+        /* Factorial */
         eval("let factorial = f(x) => IF (eq(x)(0)) (1) ( IF (lt(x)(0)) (tori(x + 1) * x) (tori(x-1) * x)  )");
         // eval("let pos_tori = f(x) => ENCODE (eq(x)(0)) (1) (pos_tori(x-1) * x)");
         // eval("let neg_tori = f(x) => ENCODE (eq(x)(0)) (1) (neg_tori(x+1) * x)");
         // eval("let tori = f(x) => ENCODE( lt(x)(0) ) ( neg_tori(x) ) ( pos_tori(x) )");
-        eval("let mult = f(x) => f(y) => IF (lt(x)(0)) ( -mult(-x)(y) ) ( IF (x) (mult(x-1)(y) + y) (0) )");
 
+        /* Multiplication */
+        eval("let mult = f(x) => f(y) => IF (lt(x)(0)) ( 0  - mult(0 - x)(y) ) ( IF (x) ( mult(x-1)(y) + y) (0) )");
 
-        // IF (eq(0)(0)) (1) ( IF(gt(x)(0)) (tori(x -1) * x) (tori(x + 1) * x) )
-
-        // utilities
-        eval("let infix = f(x) => f(y) => f(z) => (y(x))(z)");
-
-        //eval("let mult = f(x) => f(y) => ");
+        /* Exponentiation */
+        // exp(2)(3) = 8
+        // exp(3)(4) = 81
     }
 
 }

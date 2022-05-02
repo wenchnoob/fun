@@ -147,9 +147,6 @@ public class Parser {
                 case "/":
                     lhs = new ASTNode(ASTNode.Type.DIV, op, ls(lhs, rhs));
                     break;
-                case "//":
-                    lhs = new ASTNode(ASTNode.Type.FLOOR_DIV, op, ls(lhs, rhs));
-                    break;
                 case "%":
                     lhs = new ASTNode(ASTNode.Type.MOD, op, ls(lhs, rhs));
                     break;
@@ -206,7 +203,6 @@ public class Parser {
     /**
      * primaryExpression ::=
      * ( functionDefinition ) |
-     * - primaryExpression |
      * ID |
      * NUMBER
      */
@@ -217,11 +213,6 @@ public class Parser {
             if (lookahead.type() != Token.Type.CLOSING_PAREN) fail(lookahead);
             advance();
             return sub;
-        }
-
-        if (lookahead.type() == Token.Type.ADDITIVE && String.valueOf(lookahead.value()).equals("-")) {
-            advance();
-            return new ASTNode(ASTNode.Type.NEGATION, "-", ls(primaryExpression()));
         }
 
         if (lookahead.type() == Token.Type.ID) {
