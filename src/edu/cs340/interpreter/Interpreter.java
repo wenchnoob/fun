@@ -337,9 +337,6 @@ public class Interpreter {
 
         /* Factorial */
         eval("let factorial = f(x) => IF (eq(x)(0)) (1) ( IF (lt(x)(0)) (tori(x + 1) * x) (tori(x-1) * x)  )");
-        // eval("let pos_tori = f(x) => ENCODE (eq(x)(0)) (1) (pos_tori(x-1) * x)");
-        // eval("let neg_tori = f(x) => ENCODE (eq(x)(0)) (1) (neg_tori(x+1) * x)");
-        // eval("let tori = f(x) => ENCODE( lt(x)(0) ) ( neg_tori(x) ) ( pos_tori(x) )");
 
         /* Multiplication */
         eval("let mult = f(x) => f(y) => IF (lt(x)(0)) ( 0  - mult(0 - x)(y) ) ( IF (x) ( mult(x-1)(y) + y) (0) )");
