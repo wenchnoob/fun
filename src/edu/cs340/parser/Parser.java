@@ -37,6 +37,7 @@ public class Parser {
      */
     private ASTNode assignment() {
         if (lookahead.type() != Token.Type.LET)  return functionDefinition();
+        advance();
         if (lookahead.type() != Token.Type.ID) fail(lookahead);
         String name = lookahead.value();
         advance();
