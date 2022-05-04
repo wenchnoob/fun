@@ -145,6 +145,8 @@ public class Parser {
                 case "/":
                     lhs = new ASTNode(ASTNode.Type.DIV, op, ls(lhs, rhs));
                     break;
+                case "//":
+                    lhs = new ASTNode(ASTNode.Type.MOD, op, ls(lhs, rhs));
                 case "%":
                     lhs = new ASTNode(ASTNode.Type.MOD, op, ls(lhs, rhs));
                     break;
@@ -172,7 +174,7 @@ public class Parser {
      * application
      */
     private ASTNode factorial() {
-        ASTNode lhs = application();
+        ASTNode lhs = negation();
         while (lookahead.type() == Token.Type.FACT) {
             advance();
             lhs = new ASTNode(ASTNode.Type.FACT, "!", ls(lhs));
@@ -181,9 +183,21 @@ public class Parser {
     }
 
     /**
+     * negation ::=
+     * - negation |
+     * primaryExpression
+     * **/
+    private ASTNode negation() {
+        if (lookahead.type() != Token.Type.ADDITIVE) return application();
+        if (!lookahead.value().equals("-")) return application();
+        advance();
+        return new ASTNode(ASTNode.Type.NEGATION, ls(negation()));
+    }
+
+    /**
      * application ::=
      * application paramList |
-     * primaryExpression
+     * negation
      */
     private ASTNode application() {
         ASTNode lhs = primaryExpression();
@@ -197,6 +211,7 @@ public class Parser {
 
         return lhs;
     }
+
 
     /**
      * primaryExpression ::=

@@ -341,6 +341,8 @@ public class Interpreter {
         /* Multiplication */
         eval("let mult = f(x) => f(y) => IF (lt(x)(0)) ( 0  - mult(0 - x)(y) ) ( IF (x) ( mult(x-1)(y) + y) (0) )");
 
+        /** Floor division **/
+        eval("let fdiv = f(x) => f(y) => (x - x % y)/y");
         /* Exponentiation */
         // exp(2)(3) = 8
         // exp(3)(4) = 81
