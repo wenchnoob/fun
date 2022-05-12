@@ -140,7 +140,7 @@ public class Interpreter {
             case DIV:
                 return new ASTNode(ASTNode.Type.NUM, roundToPrecision(l.divide(r, 15, RoundingMode.HALF_UP), 15));
             case FLOOR_DIV:
-                return new ASTNode(ASTNode.Type.NUM, roundToPrecision(l.divideToIntegralValue(r), 15));
+                return new ASTNode(ASTNode.Type.NUM, l.divideToIntegralValue(r));
             case MOD:
                 return new ASTNode(ASTNode.Type.NUM, l.remainder(r));
             case POW: {
@@ -282,7 +282,7 @@ public class Interpreter {
     }
 
     public static void loadDefaultFunctions() {
-        eval("let pow = f(x, y) => x ^ y");
+        eval("let pow = f(x) => f(y) => x ^ y");
 
         eval("let root = f(x) => f(y) => y ^ (1/x)");
         eval("let sqrt = f(x) => root(2)(x)");
@@ -293,8 +293,8 @@ public class Interpreter {
         eval("let neq = f(x) => f(y) => isFalse(eq(x)(y))");
         eval("let gt = f(x) => f(y) => isTrue(x-y) * eq (sqrt((x-y) ^ 2)) (x-y)");
         eval("let lt = f(x) => f(y) => isTrue(x-y) * isFalse(eq(root(2)((x-y) ^ 2))(x-y))");
-        eval("let gteq = f(x, y) => isFalse(lt(x, y))");
-        eval("let lteq = f(x, y) => isFalse(gt(x, y))");
+        eval("let gteq = f(x) => f(y) => isFalse(lt(x)(y))");
+        eval("let lteq = f(x) => f(y) => isFalse(gt(x)(y))");
 
         eval("let isNegative = f(x) => lt(x)(0)");
         eval("let isPositive = f(x) => gt(x)(0)");
@@ -321,7 +321,7 @@ public class Interpreter {
         eval("let infix = f(x) => f(y) => f(z) => (y(x))(z)");
 
         /* Boolean */
-        eval("let isFalse = f(x) => (1- x ^ 2/(x ^ 2 + 1)) // 1");
+        eval("let isFalse = f(x) => fdiv(1 - x ^ 2/(x ^ 2 + 1))(1)");
         eval("let isTrue = f(x) => (isFalse(x) + 1) % 2");
         eval("let TRUE = f(x) => f(y) => x");
         eval("let FALSE = f(x) => f(y) => y");
@@ -336,7 +336,7 @@ public class Interpreter {
         eval("let IF = f(x) => f(y) => f(z) => ENCODE(x)(y)(z)");
 
         /* Factorial */
-        eval("let factorial = f(x) => IF (eq(x)(0)) (1) ( IF (lt(x)(0)) (tori(x + 1) * x) (tori(x-1) * x)  )");
+        eval("let factorial = f(x) => IF (eq(x)(0)) (1) ( IF (lt(x)(0)) (factorial(x + 1) * x) (factorial(x-1) * x)  )");
 
         /* Multiplication */
         eval("let mult = f(x) => f(y) => IF (lt(x)(0)) ( 0  - mult(0 - x)(y) ) ( IF (x) ( mult(x-1)(y) + y) (0) )");

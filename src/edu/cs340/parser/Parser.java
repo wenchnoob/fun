@@ -146,7 +146,8 @@ public class Parser {
                     lhs = new ASTNode(ASTNode.Type.DIV, op, ls(lhs, rhs));
                     break;
                 case "//":
-                    lhs = new ASTNode(ASTNode.Type.MOD, op, ls(lhs, rhs));
+                    lhs = new ASTNode(ASTNode.Type.FLOOR_DIV, op, ls(lhs, rhs));
+                    break;
                 case "%":
                     lhs = new ASTNode(ASTNode.Type.MOD, op, ls(lhs, rhs));
                     break;
