@@ -100,7 +100,7 @@ public class Main {
             String line4 = "\t\'drop {var_name}\' -- to have that function unregistered\n";
             String line5 = "\t\'clear vars\' -- to have all functions unregistered\n";
             String line6 = "\t\'help {command_name}\' -- to for a longer explanation of how a command works";
-            System.out.printf("%s%s%s%s%s%s%s%n", line1, line2, line3, line4, line5, line6);
+            System.out.printf("%s%s%s%s%s%s%n", line1, line2, line3, line4, line5, line6);
         }
     }
 

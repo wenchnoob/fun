@@ -1,8 +1,12 @@
 modules = ["java-graalvm22.3"]
-run = "java -cp bin edu.cs340.Main"
+run = "javac -d bin src/edu/cs340/*.java src/edu/cs340/interpreter/*.java src/edu/cs340/lexer/*.java src/edu/cs340/parser/*.java & java -cp bin edu.cs340.Main"
 
 [nix]
 channel = "stable-24_05"
 
 [deployment]
-run = ["sh", "-c", "java -cp bin edu.cs340.Main"]
+run = [
+  "sh",
+  "-c",
+  "javac -d bin src/edu/cs340/*.java src/edu/cs340/interpreter/*.java src/edu/cs340/lexer/*.java src/edu/cs340/parser/*.java & java -cp bin edu.cs340.Main",
+]
